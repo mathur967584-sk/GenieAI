@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Genie AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:linear-gradient(135deg,#0f172a,#020617);
+  color:white;
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+}
+
+header{
+  background:#020617;
+  padding:12px;
+  text-align:center;
+  border-bottom:1px solid #1e293b;
+}
+
+header img{
+  width:60px;
+  vertical-align:middle;
+  border-radius:12px;
+}
+
+#chat{
+  flex:1;
+  overflow-y:auto;
+  padding:15px;
+}
+
+.msg{
+  margin:10px 0;
+  padding:12px;
+  border-radius:12px;
+  max-width:80%;
+  animation:fade .3s;
+}
+
+.user{background:#2563eb;margin-left:auto;}
+.bot{background:#1e293b;}
+
+@keyframes fade{
+from{opacity:0;transform:translateY(10px);}
+to{opacity:1;transform:translateY(0);}
+}
+
+.input-box{
+display:flex;
+padding:10px;
+background:#020617;
+gap:6px;
+}
+
+input{
+flex:1;
+padding:12px;
+border:none;
+border-radius:8px;
+outline:none;
+}
+
+button{
+padding:12px 14px;
+border:none;
+border-radius:8px;
+background:#22c55e;
+color:white;
+cursor:pointer;
+}
+
+.install-btn{
+background:#2563eb;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<img src="logo.png" alt="Genie AI Logo">
+<h2> Genie AI</h2>
+<p>Your Smart Assistant</p>
+</header>
+
+<div id="chat"></div>
+
+<div class="input-box">
+<input id="userInput" placeholder="Ask anything...">
+<button onclick="sendMessage()">Send</button>
+<button onclick="startVoice()"></button>
+<button class="install-btn" onclick="installApp()">Install App</button>
+</div>
+
+<script>
+
+//  Add your OpenAI API key here
+const API_KEY = "sk-xxxxx"; // REMOVE THIS FOR NOW
+
+// Send Message
+async function sendMessage(){
+  let input=document.getElementById("userInput");
+  let text=input.value.trim();
+  if(!text) return;
+
+  addMessage(text,"user");
+  input.value="";
+  typing();
+
+  // Smart reply with API
+  let reply = await smartReply(text);
+  addMessage(reply,"bot");
+}
+
+// Add Message
+function addMessage(text,type){
+  let chat=document.getElementById("chat");
+  let div=document.createElement("div");
+  div.className="msg "+type;
+  div.innerText=text;
+  chat.appendChild(div);
+  chat.scrollTop=chat.scrollHeight;
+}
+
+// Typing animation
+function typing(){
+  let chat=document.getElementById("chat");
+  let div=document.createElement("div");
+  div.className="msg bot";
+  div.id="typing";
+  div.innerText="Genie is typing...";
+  chat.appendChild(div);
+  setTimeout(()=>{ div.remove(); },700);
+}
+
+// Smart reply function
+async function smartReply(input){
+  let msg = input.toLowerCase();
+
+  //  Offline rules
+  if(msg.includes("hello") || msg.includes("hi")) return "Hello  I am Genie AI.";
+  if(msg.includes("your name")) return "My name is Genie AI ";
+  if(msg.includes("who made you")) return "I was created by Surendra Kumar Mathur ";
+  if(msg.includes("time")) return "Current time : "+new Date().toLocaleTimeString();
+  if(msg.includes("date")) return "Today : "+new Date().toDateString();
+  if(msg.includes("ai")) return "AI means Artificial Intelligence  — machines that can think and learn";
+  if(msg.includes("alphabet") || msg=="abcd") return "Alphabet: A B C D E F G ... Z";
+
+  // Math solver
+  try{
+    if(/^[0-9+\-*/(). ]+$/.test(msg)){
+      let result = Function('"use strict";return ('+msg+')')();
+      return "Answer : "+result;
+    }
+  }catch{}
+
+  // General knowledge demo
+  if(msg.includes("india")) return "India  is a country in South Asia. Capital is New Delhi.";
+  if(msg.includes("sun")) return "The Sun  is a star at the center of our solar system.";
+
+  //  API Call for real AI
+  return await callGPT(input);
+}
+
+//  OpenAI API Call
+async function callGPT(message){
+  try{
+    let response = await fetch("https://api.openai.com/v1/chat/completions",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization": `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify({
+        model:"gpt-4.1-mini",
+        messages:[{role:"user",content:message}]
+      })
+    });
+
+    let data = await response.json();
+    return data.choices[0].message.content;
+  }catch{
+    return "Error: Unable to get response from AI ";
+  }
+}
+
+//  Voice input
+function startVoice(){
+  let recognition = new(window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang="en-IN";
+  recognition.onresult = function(event){
+    let text = event.results[0][0].transcript;
+    document.getElementById("userInput").value=text;
+    sendMessage();
+  }
+  recognition.start();
+}
+
+//  Install button
+function installApp(){
+  alert("To install: Open browser menu  Add to Home Screen");
+}
+
+//  Enter key send
+document.getElementById("userInput")
+.addEventListener("keypress",function(e){
+  if(e.key==="Enter") sendMessage();
+});
+
+</script>
+
+</body>
+</html>
